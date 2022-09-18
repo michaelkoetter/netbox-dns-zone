@@ -7,7 +7,15 @@ This script generates DNS forward and reverse zones from Netbox IP Addresses.
 
 > WIP
 
-## Installation
+## Docker Images
+
+Docker Images are automatically built for new releases.
+
+```bash
+docker run --rm mkoetter/netbox-dns-zone:latest --help
+```
+
+## Development
 
 ```bash
 python3 -m venv venv/

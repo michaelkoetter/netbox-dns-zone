@@ -6,6 +6,8 @@ on:
       - master
     paths-ignore:
       - README.md
+  release:
+    types: [published]
 
 jobs:
   docker:

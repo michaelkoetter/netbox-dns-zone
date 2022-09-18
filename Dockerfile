@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM python:3-alpine
+FROM python:3-alpine
 
 WORKDIR /usr/src/app
 

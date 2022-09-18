@@ -1,11 +1,10 @@
-FROM python:3-alpine
+FROM --platform=$BUILDPLATFORM python:3-alpine
 
 WORKDIR /usr/src/app
 
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY templates/ ./templates/
-COPY dns-zone.py ./
+COPY . .
 
 ENTRYPOINT [ "python", "./dns-zone.py" ]

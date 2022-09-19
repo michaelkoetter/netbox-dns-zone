@@ -19,7 +19,7 @@ import dns.rdataclass
 import dns.rdatatype
 import dns.rdtypes
 import dns.zone
-
+import urllib.parse
 
 dotenv.load_dotenv()
 
@@ -103,6 +103,12 @@ def generate_zone_hash(zone, remove_txt_attributes, reset_serial):
         print(f'Zone hash failed: {err}', file=sys.stderr)
         exit(-1)
 
+def output(name, text, file=sys.stdout, github_actions=False):
+    if github_actions:
+        print(f'::set-output name={name}::{urllib.parse.quote(text)}', file=sys.stdout)
+    else:
+        print(text, file=file)
+       
 @click.group()
 def cli():
     pass
@@ -131,9 +137,10 @@ def cli():
 @click.option('--hash-remove-txt-attribute', 'hash_remove_txt_attributes', multiple=True, default=['generated-at'])
 @click.option('--hash-reset-serial/--no-hash-reset-serial', default=True)
 @click.option('--hash-only', is_flag=True)
+@click.option('--github-actions', is_flag=True, envvar='GITHUB_ACTIONS')
 def generate(zone_file, url, token, parent_prefixes, nameservers, 
     zone, serial, refresh, retry, expire, ttl, relativize, reverse_prefix, validate, template_path,
-    hash_remove_txt_attributes, hash_reset_serial, hash_only):
+    hash_remove_txt_attributes, hash_reset_serial, hash_only, github_actions):
     """
     Generates a zone file. Use '-' for stdout.
     """
@@ -182,18 +189,21 @@ def generate(zone_file, url, token, parent_prefixes, nameservers,
         try: 
             parsed_zone = dns.zone.from_text(rendered_zone, origin=(reverse_origin or origin))
             zone_hash = generate_zone_hash(parsed_zone, hash_remove_txt_attributes, hash_reset_serial)
-            if hash_only: print(zone_hash, file=sys.stdout)
+            if hash_only or github_actions: 
+                output('zone_hash', zone_hash, file=sys.stdout, github_actions=github_actions)
         except BaseException as err:
             print(f'Zone validation failed: {err}', file=sys.stderr)
             exit(-1)
     
-    if not hash_only: print(rendered_zone, file=zone_file or sys.stdout)
+    if (not hash_only) or github_actions: 
+        output('rendered_zone', rendered_zone, file=zone_file or sys.stdout, github_actions=github_actions)
 
 @cli.command()
 @click.argument('zone-file', metavar='<zone file>', type=click.File())
 @click.option('--hash-remove-txt-attribute', 'remove_txt_attributes', multiple=True, default=['generated-at'])
 @click.option('--hash-reset-serial/--no-hash-reset-serial', 'reset_serial', default=True)
-def zone_hash(zone_file, remove_txt_attributes, reset_serial):
+@click.option('--github-actions', is_flag=True, envvar='GITHUB_ACTIONS')
+def zone_hash(zone_file, remove_txt_attributes, reset_serial, github_actions):
     """
     Prints the hash of a zone file. Use '-' for stdin.
 
@@ -218,7 +228,7 @@ def zone_hash(zone_file, remove_txt_attributes, reset_serial):
     try: 
         zone = dns.zone.from_file(zone_file)
         hash = generate_zone_hash(zone, remove_txt_attributes, reset_serial)
-        print(hash, file=sys.stdout)
+        output('zone_hash', hash, file=sys.stdout, github_actions=github_actions)
     except BaseException as err:
         print(f'Zone hash failed: {err}', file=sys.stderr)
         exit(-1)

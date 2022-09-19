@@ -19,7 +19,6 @@ import dns.rdataclass
 import dns.rdatatype
 import dns.rdtypes
 import dns.zone
-import urllib.parse
 
 dotenv.load_dotenv()
 
@@ -103,9 +102,10 @@ def generate_zone_hash(zone, remove_txt_attributes, reset_serial):
         print(f'Zone hash failed: {err}', file=sys.stderr)
         exit(-1)
 
-def output(name, text, file=sys.stdout, github_actions=False):
+def output(name, text: str, file=sys.stdout, github_actions=False):
     if github_actions:
-        print(f'::set-output name={name}::{urllib.parse.quote(text)}', file=sys.stdout)
+        escaped_text = text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+        print(f'::set-output name={name}::{escaped_text}', file=sys.stdout)
     else:
         print(text, file=file)
        

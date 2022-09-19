@@ -126,7 +126,7 @@ def cli():
 @click.option('--reverse-prefix', metavar='CIDR', callback=validate_prefix, help='Generate reverse zone for the specified prefix')
 @click.option('--validate/--no-validate', show_default=True, default=True,
     help='Perform basic validation of the generated zone')
-@click.option('--template-path', default='./templates', show_default=True, 
+@click.option('--template-path', envvar='DNS_ZONE_TEMPLATE_PATH', default='./templates', show_default=True, 
     help='Template search path')
 @click.option('--hash-remove-txt-attribute', 'hash_remove_txt_attributes', multiple=True, default=['generated-at'])
 @click.option('--hash-reset-serial/--no-hash-reset-serial', default=True)

@@ -30,7 +30,8 @@
 $ORIGIN {{ reverse_origin }}
 $TTL {{ ttl }}
 {{ "%-39s" | format(reverse_origin | relativize) }} IN  SOA     {{ origin }} {{ "root" | fqdn(origin) }} {{ serial }} {{ refresh }} {{ retry }} {{ expire }} {{ ttl }}
-{{ "%-39s" | format(reverse_origin | relativize) }} IN  TXT     generated-by=netbox-dns-zone, generated-at={{ timestamp }}
+{{ "%-39s" | format(origin | relativize) }} IN  TXT     "generated-by=netbox-dns-zone"
+{{ "%-39s" | format(origin | relativize) }} IN  TXT     "generated-at={{ timestamp }}"
 
 {%- for nameserver in nameservers %}
 {{ "%-39s" | format(reverse_origin | relativize) }} IN  NS      {{ nameserver | fqdn }}

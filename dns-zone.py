@@ -9,9 +9,15 @@ import netaddr
 import jinja2
 import dotenv
 from datetime import datetime
+import hashlib
 import dns.name
 import dns.reversename
 import dns.rrset
+import dns.rdata
+import dns.rdataset
+import dns.rdataclass
+import dns.rdatatype
+import dns.rdtypes
 import dns.zone
 
 
@@ -69,7 +75,40 @@ def validate_dns_name(ctx, param, value):
             raise click.BadParameter(err)
     return value
 
-@click.command
+def generate_zone_hash(zone, remove_txt_attributes, reset_serial):
+    def clean_rdata(rdata: dns.rdata.Rdata):
+        if isinstance(rdata, dns.rdtypes.ANY.SOA.SOA) and reset_serial:
+            return rdata.replace(serial=0)
+        if isinstance(rdata, dns.rdtypes.ANY.TXT.TXT):
+            _attribute = rdata.to_text().strip('"').split('=')
+            if _attribute and _attribute[0] in remove_txt_attributes:
+                return rdata.replace(strings=f'{_attribute[0]}=removed')
+        return rdata
+
+    try: 
+        rdset: dns.rdataset.Rdataset
+        for name, rdset in zone.iterate_rdatasets():
+            updated_rdata = []
+            for rdata in rdset.items:
+                _rdata = clean_rdata(rdata)
+                if _rdata: updated_rdata.append(_rdata)
+            
+            rdset.clear()
+            for rdata in updated_rdata: rdset.add(rdata)
+
+        zone_text: str = zone.to_text(sorted=True, relativize=False, nl='\n', want_comments=False, want_origin=False)
+        return hashlib.sha1(zone_text.encode('utf-8')).hexdigest()
+        
+    except BaseException as err:
+        print(f'Zone hash failed: {err}', file=sys.stderr)
+        exit(-1)
+
+@click.group()
+def cli():
+    pass
+
+@cli.command()
+@click.argument('zone-file', metavar='<zone file>', required=False, type=click.File('w'))
 @click.option('--url', envvar='NETBOX_URL', show_default='$NETBOX_URL', required=True, help='Netbox base URL')
 @click.option('--token', envvar='NETBOX_TOKEN', show_default='$NETBOX_TOKEN', required=True, help='Netbox API Token')
 @click.option('--parent-prefix', 'parent_prefixes', metavar='CIDR', multiple=True, show_default=True, default=('0.0.0.0/0', '::/0'),
@@ -89,8 +128,15 @@ def validate_dns_name(ctx, param, value):
     help='Perform basic validation of the generated zone')
 @click.option('--template-path', default='./templates', show_default=True, 
     help='Template search path')
-def main(url, token, parent_prefixes, nameservers, 
-    zone, serial, refresh, retry, expire, ttl, relativize, reverse_prefix, validate, template_path):
+@click.option('--hash-remove-txt-attribute', 'hash_remove_txt_attributes', multiple=True, default=['generated-at'])
+@click.option('--hash-reset-serial/--no-hash-reset-serial', default=True)
+@click.option('--hash-only', is_flag=True)
+def generate(zone_file, url, token, parent_prefixes, nameservers, 
+    zone, serial, refresh, retry, expire, ttl, relativize, reverse_prefix, validate, template_path,
+    hash_remove_txt_attributes, hash_reset_serial, hash_only):
+    """
+    Generates a zone file. Use '-' for stdout.
+    """
 
     origin = dns.name.from_text(zone)
     reverse_origin = get_reverse_origin(reverse_prefix) if reverse_prefix else None
@@ -132,13 +178,50 @@ def main(url, token, parent_prefixes, nameservers,
         timestamp=datetime.utcnow().isoformat(timespec='seconds')
     )
 
-    if validate:
-        try: dns.zone.from_text(rendered_zone, origin=(reverse_origin or origin))
+    if validate or hash_only:
+        try: 
+            parsed_zone = dns.zone.from_text(rendered_zone, origin=(reverse_origin or origin))
+            zone_hash = generate_zone_hash(parsed_zone, hash_remove_txt_attributes, hash_reset_serial)
+            if hash_only: print(zone_hash, file=sys.stdout)
         except BaseException as err:
             print(f'Zone validation failed: {err}', file=sys.stderr)
             exit(-1)
     
-    print(rendered_zone)
+    if not hash_only: print(rendered_zone, file=zone_file or sys.stdout)
+
+@cli.command()
+@click.argument('zone-file', metavar='<zone file>', type=click.File())
+@click.option('--hash-remove-txt-attribute', 'remove_txt_attributes', multiple=True, default=['generated-at'])
+@click.option('--hash-reset-serial/--no-hash-reset-serial', 'reset_serial', default=True)
+def zone_hash(zone_file, remove_txt_attributes, reset_serial):
+    """
+    Prints the hash of a zone file. Use '-' for stdin.
+
+    The hash is calculated over all records in the zone,
+    ignoring some dynamic values (e.g. SOA serial, certain TXT
+    attributes).
+
+    It can be used in conjunction with 'generate --hash-only ...'
+    to check if a zone file needs to be updated.
+    """
+
+    def map_rdata(rdata: dns.rdata.Rdata):
+        if isinstance(rdata, dns.rdtypes.ANY.SOA.SOA) and reset_serial:
+            return rdata.replace(serial=0)
+        if isinstance(rdata, dns.rdtypes.ANY.TXT.TXT):
+            _attribute = rdata.to_text().strip('"').split('=')
+            if _attribute and _attribute[0] in remove_txt_attributes:
+                return rdata.replace(strings=f'{_attribute[0]}=removed')
+            
+        return rdata
+
+    try: 
+        zone = dns.zone.from_file(zone_file)
+        hash = generate_zone_hash(zone, remove_txt_attributes, reset_serial)
+        print(hash, file=sys.stdout)
+    except BaseException as err:
+        print(f'Zone hash failed: {err}', file=sys.stderr)
+        exit(-1)
 
 if __name__ == '__main__':
-    main()
+    cli()

@@ -126,7 +126,7 @@ def cli():
 @click.option('--nameserver', 'nameservers', metavar='DNSNAME', multiple=True, required=True, callback=validate_dns_name,
     help='Nameserver names of the zone (can be specified multiple times)')
 @click.option('--include', 'includes', metavar='FILE', multiple=True, default=[], type=click.File('r'),
-    help='Files to $INCLUDE at the end of the generated zone file (can be specified multiple times)')
+    help='Files to include at the end of the generated zone file (can be specified multiple times)')
 @click.option('--zone', metavar='DNSNAME', callback=validate_dns_name, required=True, help='Zone name')
 @click.option('--serial', show_default='current timestamp', default=int(datetime.utcnow().timestamp()), help='SOA Serial')
 @click.option('--refresh', type=int, show_default=True, default=86400, help='SOA Refresh')

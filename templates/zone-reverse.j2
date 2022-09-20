@@ -40,3 +40,7 @@ $TTL {{ ttl }}
 {%- for ip_address in addresses %}
 {{ "%-39s" | format(ip_address | address | reverse_name | relativize ) }} IN  PTR     {{ get_name(ip_address) }}
 {%- endfor %}
+
+{%- for include in includes %}
+$INCLUDE {{ include }}
+{%- endfor %}

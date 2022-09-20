@@ -2,3 +2,5 @@ venv/
 .env
 example-*
 test.conf
+*.pyc
+__pycache__

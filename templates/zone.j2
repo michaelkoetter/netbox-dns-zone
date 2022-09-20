@@ -40,3 +40,7 @@ $TTL {{ ttl }}
 {%- for ip_address in addresses %}
 {{ "%-39s" | format(get_name(ip_address)) }} IN  {{ "%-7s" | format(ip_address | address_type ) }} {{ ip_address | address }}
 {%- endfor %}
+
+{%- for include in includes %}
+$INCLUDE {{ include }}
+{%- endfor %}

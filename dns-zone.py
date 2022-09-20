@@ -20,7 +20,11 @@ import dns.rdatatype
 import dns.rdtypes
 import dns.zone
 
+import custom_rdtypes
+
 dotenv.load_dotenv()
+
+custom_rdtypes.register_custom_types()
 
 def filter_address(ip_address):
     return str(netaddr.IPNetwork(ip_address.address).ip)
@@ -121,6 +125,8 @@ def cli():
     callback=validate_prefix, help='Limit IP Adresses to the specified prefixes (can be specified multiple times)')
 @click.option('--nameserver', 'nameservers', metavar='DNSNAME', multiple=True, required=True, callback=validate_dns_name,
     help='Nameserver names of the zone (can be specified multiple times)')
+@click.option('--include', 'includes', metavar='FILE', multiple=True, default=[],
+    help='Files to $INCLUDE at the end of the generated zone file (can be specified multiple times)')
 @click.option('--zone', metavar='DNSNAME', callback=validate_dns_name, required=True, help='Zone name')
 @click.option('--serial', show_default='current timestamp', default=int(datetime.utcnow().timestamp()), help='SOA Serial')
 @click.option('--refresh', type=int, show_default=True, default=86400, help='SOA Refresh')
@@ -138,7 +144,7 @@ def cli():
 @click.option('--hash-reset-serial/--no-hash-reset-serial', default=True)
 @click.option('--hash-only', is_flag=True)
 @click.option('--github-actions', is_flag=True, envvar='GITHUB_ACTIONS')
-def generate(zone_file, url, token, parent_prefixes, nameservers, 
+def generate(zone_file, url, token, parent_prefixes, nameservers, includes,
     zone, serial, refresh, retry, expire, ttl, relativize, reverse_prefix, validate, template_path,
     hash_remove_txt_attributes, hash_reset_serial, hash_only, github_actions):
     """
@@ -182,12 +188,13 @@ def generate(zone_file, url, token, parent_prefixes, nameservers,
         retry=retry,
         expire=expire,
         ttl=ttl,
-        timestamp=datetime.utcnow().isoformat(timespec='seconds')
+        timestamp=datetime.utcnow().isoformat(timespec='seconds'),
+        includes=includes
     )
 
     if validate or hash_only:
         try: 
-            parsed_zone = dns.zone.from_text(rendered_zone, origin=(reverse_origin or origin))
+            parsed_zone = dns.zone.from_text(rendered_zone, relativize=False, allow_include=True)
             zone_hash = generate_zone_hash(parsed_zone, hash_remove_txt_attributes, hash_reset_serial)
             if hash_only or github_actions: 
                 output('zone_hash', zone_hash, file=sys.stdout, github_actions=github_actions)
@@ -226,7 +233,8 @@ def zone_hash(zone_file, remove_txt_attributes, reset_serial, github_actions):
         return rdata
 
     try: 
-        zone = dns.zone.from_file(zone_file)
+        zone = dns.zone.from_file(zone_file, relativize=False, allow_include=True)
+        print(zone.to_text())
         hash = generate_zone_hash(zone, remove_txt_attributes, reset_serial)
         output('zone_hash', hash, file=sys.stdout, github_actions=github_actions)
     except BaseException as err:

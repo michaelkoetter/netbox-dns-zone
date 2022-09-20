@@ -234,7 +234,6 @@ def zone_hash(zone_file, remove_txt_attributes, reset_serial, github_actions):
 
     try: 
         zone = dns.zone.from_file(zone_file, relativize=False, allow_include=True)
-        print(zone.to_text())
         hash = generate_zone_hash(zone, remove_txt_attributes, reset_serial)
         output('zone_hash', hash, file=sys.stdout, github_actions=github_actions)
     except BaseException as err:

@@ -41,6 +41,8 @@ $TTL {{ ttl }}
 {{ "%-39s" | format(get_name(ip_address)) }} IN  {{ "%-7s" | format(ip_address | address_type ) }} {{ ip_address | address }}
 {%- endfor %}
 
-{%- for include in includes %}
-$INCLUDE {{ include }}
-{%- endfor %}
+{% for include in includes %}
+;; BEGIN included file: {{ include.name }}
+{{ include.read() -}}
+;; END included file: {{ include.name }}
+{% endfor %}

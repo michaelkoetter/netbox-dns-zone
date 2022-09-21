@@ -1,7 +1,9 @@
 # Generate DNS Zone Files from Netbox
 
+![License](https://img.shields.io/github/license/michaelkoetter/netbox-dns-zone)
+![Latest Release](https://img.shields.io/github/v/tag/michaelkoetter/netbox-dns-zone?label=release&sort=semver)
 [![Build Docker Image](https://github.com/michaelkoetter/netbox-dns-zone/actions/workflows/build-image.yml/badge.svg)](https://github.com/michaelkoetter/netbox-dns-zone/actions/workflows/build-image.yml)
-[![image-version](https://img.shields.io/static/v1?logo=docker&label=Docker+Hub&message=mkoetter/netbox-dns-zone&color=informational)](https://hub.docker.com/r/mkoetter/netbox-dns-zone)
+[![Docker Hub](https://img.shields.io/static/v1?logo=docker&label=Docker+Hub&message=mkoetter/netbox-dns-zone&color=informational)](https://hub.docker.com/r/mkoetter/netbox-dns-zone)
 
 This script generates DNS forward and reverse zones from Netbox IP Addresses.
 

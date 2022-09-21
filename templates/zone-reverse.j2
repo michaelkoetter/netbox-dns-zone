@@ -29,7 +29,7 @@
 
 $ORIGIN {{ reverse_origin }}
 $TTL {{ ttl }}
-{{ "%-39s" | format(reverse_origin | relativize) }} IN  SOA     {{ origin }} {{ "root" | fqdn(origin) }} {{ serial }} {{ refresh }} {{ retry }} {{ expire }} {{ ttl }}
+{{ "%-39s" | format(reverse_origin | relativize) }} IN  SOA     {{ nameservers | first | fqdn(origin) }} {{ "root" | fqdn(origin) }} {{ serial }} {{ refresh }} {{ retry }} {{ expire }} {{ ttl }}
 {{ "%-39s" | format(reverse_origin | relativize) }} IN  TXT     "generated-by=netbox-dns-zone"
 {{ "%-39s" | format(reverse_origin | relativize) }} IN  TXT     "generated-at={{ timestamp }}"
 

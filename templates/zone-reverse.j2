@@ -14,7 +14,7 @@
 #}
 {%- macro get_name(ip_address) -%}
 {%- if ip_address.dns_name -%}
-{{ ip_address.dns_name | fqdn }} {#- FIXME we just assume that 'dns_name' is qualified -#}
+{{ ip_address.dns_name | fqdn(origin) }}
 {%- else -%}
 {%- if ip_address.assigned_object.device -%}
 {{ ip_address.assigned_object.device.name | fqdn(origin) }}

@@ -172,7 +172,7 @@ def generate(zone_file, url, token, parent_prefixes, nameservers, includes,
     nb = pynetbox.api(url, token)
     ip_addresses = list(nb.ipam.ip_addresses.filter(parent=(reverse_prefix or parent_prefixes)))
     if not reverse_prefix:
-        ip_addresses = list(filter(lambda addr: not addr['dns_name'] or dns.name.from_text(addr['dns_name']).is_subdomain(origin), ip_addresses))
+        ip_addresses = list(filter(lambda addr: not addr['dns_name'] or dns.name.from_text(addr['dns_name'], origin=origin).is_subdomain(origin), ip_addresses))
 
     # Ensure nameservers are qualified
     _nameservers = list(map(lambda name: dns.name.from_text(name, origin), nameservers))
